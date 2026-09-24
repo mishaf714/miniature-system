@@ -21,9 +21,9 @@ POINTS = {"Positive": 100, "Mixed/Neutral": 50, "Negative": 0}
 SOURCES = ["Glassdoor", "Indeed", "Blind", "Reddit", "Comparably", "Trustpilot"]
 
 # Contractor-role scope: reviews whose reviewer job title contains one of these words.
-ROLE_KEYWORDS = ["consultant", "expert", "specialist"]
+ROLE_KEYWORDS = ["consultant", "expert", "specialist", "generalist"]
 SCOPES = {
-    "contractor": dict(label="Consultant / Expert / Specialist titles",
+    "contractor": dict(label="Consultant / Expert / Specialist / Generalist titles",
                        test=lambda r: any(k in (r["reviewer_type"] or "").lower() for k in ROLE_KEYWORDS)),
     "all": dict(label="All reviewers", test=lambda r: True),
 }
