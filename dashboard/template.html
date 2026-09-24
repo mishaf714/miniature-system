@@ -55,6 +55,11 @@ header .lede{max-width:70ch;color:var(--ink-2)}
 .banner svg{flex:none;margin-top:2px}
 .banner p{max-width:none}
 
+.scope{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.scope .eyebrow{margin-right:4px}
+.scope-btn{font:500 14px var(--body);color:var(--ink-2);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:7px 14px;cursor:pointer}
+.scope-btn:hover{border-color:var(--ink-2)}
+.scope-btn[aria-pressed="true"]{background:var(--ink);color:var(--card);border-color:var(--ink)}
 .kpis{display:grid;grid-template-columns:1.4fr repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
 .kpi{background:var(--card);padding:18px 18px 16px;display:flex;flex-direction:column;gap:6px;min-width:0}
 .kpi .v{font:600 34px/1 var(--mono);font-variant-numeric:tabular-nums}
@@ -134,6 +139,12 @@ footer{font-size:12.5px;color:var(--muted);text-align:left}
     <h1>Mercor Employee &amp; Contractor Sentiment</h1>
     <p class="lede">Each review is classified from its written text: the reviewer's own headline, plus a body excerpt when the excerpt could be tied to that specific review. Star ratings are recorded but never used to classify. Every row links to its source.</p>
   </header>
+
+  <div class="scope" role="group" aria-label="Reviewer scope">
+    <span class="eyebrow">Reviewer scope</span>
+    <button type="button" class="scope-btn" data-scope="contractor" aria-pressed="true">Consultant / Expert / Specialist titles</button>
+    <button type="button" class="scope-btn" data-scope="all" aria-pressed="false">All reviewers</button>
+  </div>
 
   <div class="banner" role="note">
     <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2 1 21h22L12 2Zm0 6 .01 0 .99 7h-2l1-7Zm-1 9h2v2h-2v-2Z"/></svg>
@@ -297,7 +308,7 @@ footer{font-size:12.5px;color:var(--muted);text-align:left}
 
 <script>
 const DATA = /*__DATA__*/null;
-const M = DATA.metrics, R = DATA.reviews;
+let M, R, O, SCOPE = DATA.default;
 const SOURCES = ["Glassdoor","Indeed","Blind","Reddit","Comparably","Trustpilot"];
 const NS = "http://www.w3.org/2000/svg";
 const $ = s => document.querySelector(s);
@@ -347,22 +358,28 @@ function bindTip(node, html) {
   node.addEventListener("mouseleave", () => tip.hidden = true);
 }
 
+function renderAll() {
+M = DATA.scopes[SCOPE].metrics; R = DATA.scopes[SCOPE].reviews; O = M.overall;
+document.querySelectorAll(".scope-btn").forEach(b => b.setAttribute("aria-pressed", b.dataset.scope === SCOPE));
+document.querySelectorAll(".scope-label").forEach(n => n.textContent = M.scope_label);
 // ---------- Header ----------
 document.querySelectorAll("#collected,.c-date").forEach(n => n.textContent = fmtDate(M.collected_on));
-const O = M.overall;
 const avail = SOURCES.filter(s => M.by_source[s].n > 0);
-$("#coverage").innerHTML =
+const allN = DATA.scopes.all.metrics.overall.n;
+$("#coverage").innerHTML = (SCOPE === "contractor"
+  ? `<b>Showing only reviewers whose job title contains ${M.role_keywords.map(k => `"${k}"`).join(", ")}: ${O.n} of ${allN} classified reviews.</b> Most Glassdoor reviews surfaced without a job title, so this filter keeps only reviews where the title was visible and matched. With n=${O.n}, every figure below is anecdotal. Switch to "All reviewers" for the full sample.<br>`
+  : "") +
   `<b>${O.n} reviews classified from ${avail.length} of ${SOURCES.length} target sources</b> (${avail.join(", ")}). ` +
   `Reddit and Comparably are <b>unavailable</b> (blocked or no Mercor profile), and Trustpilot shows only an aggregate rating. ` +
   `Records come from search-index results, not a random sample. Glassdoor's own aggregate (4.1–4.2★) suggests its full review population is more positive than this sample. ` +
-  `Only ${O.n - M.by_year.find(y => y.year == null).n} classified reviews have a verified date. <a href="#method">Methodology</a>`;
+  `Only ${O.n - (M.by_year.find(y => y.year == null)?.n ?? 0)} classified reviews have a verified date. <a href="#method">Methodology</a>`;
 
 // ---------- KPIs ----------
 (() => {
   const ci = O.ci ? `95% interval ${O.ci[0]}–${O.ci[1]}` : "";
   $("#kpis").innerHTML = `
     <div class="kpi hero">
-      <div class="eyebrow">Overall contentment score · all sources · all years</div>
+      <div class="eyebrow">Overall contentment score · <span class="scope-label"></span> · all sources · all years</div>
       <div class="v">${Math.round(O.contentment)}<span class="muted" style="font-size:20px"> / 100</span></div>
       <div class="meter" aria-hidden="true"><b style="left:${O.ci?.[0] ?? 0}%;right:${100 - (O.ci?.[1] ?? 0)}%"></b><i style="width:${O.contentment}%"></i></div>
       <div class="s">${ci} · calculated from ${O.n} written reviews</div>
@@ -460,7 +477,12 @@ $("#coverage").innerHTML =
 
 // ---------- 2b. Glassdoor sequence ----------
 (() => {
-  const G = M.glassdoor_sequence, pts = G.points, n = pts.length;
+  const G = M.glassdoor_sequence;
+  if (!G) {
+    $("#seqChart").innerHTML = `<p class="chart-note">Not enough Glassdoor reviews in this scope for an ordered trend (needs at least 6; this scope has ${M.by_source.Glassdoor.n}).</p>`;
+    $("#seqNote").textContent = ""; $("#seqSplit").innerHTML = ""; return;
+  }
+  const pts = G.points, n = pts.length;
   const W = 520, H = 250, l = 36, r = 10, t = 16, b = 44, pw = W - l - r, ph = H - t - b;
   const s = svg(W, H, $("#seqChart"));
   s.setAttribute("aria-label", "Glassdoor reviews in review ID order with rolling contentment line");
@@ -605,13 +627,14 @@ $("#syTable").innerHTML = `<thead><tr><th>Source</th><th>Year</th><th class="r">
   SOURCES.filter(s => !M.by_source[s].n).map(s => `<tr class="na"><td><b>${s}</b></td><td>All years</td><td class="r">Unavailable</td><td class="r">—</td><td class="r">—</td><td class="r">—</td><td class="r">—</td><td><span class="tag">No data</span></td></tr>`).join("") + "</tbody>";
 
 // ---------- 7. Aggregates ----------
-$("#indivRating").textContent = `Only ${M.individual_ratings.n} individual reviews had a star rating visible (mean ${M.individual_ratings.mean}★), too few to report as an average.`;
+$("#indivRating").textContent = M.individual_ratings.n ? `Only ${M.individual_ratings.n} individual reviews in this scope had a star rating visible (mean ${M.individual_ratings.mean}★), too few to report as an average.` : "No individual review in this scope had a verified star rating.";
 $("#aggTable").innerHTML = `<thead><tr><th>Source</th><th>Metric</th><th>Value</th><th>Detail</th><th>Data type</th></tr></thead><tbody>` +
   M.aggregates.map(a => `<tr class="${a.value ? "" : "na"}"><td><b>${a.source}</b></td><td>${esc(a.metric)}</td><td class="num">${a.value ? esc(a.value) : "Unavailable"}</td><td class="small">${esc(a.detail)} · <a href="${a.url}" target="_blank" rel="noopener">source</a></td><td><span class="tag">${a.value ? "Aggregated platform rating" : "Unavailable"}</span></td></tr>`).join("") + "</tbody>";
 
 // ---------- 8. Review table ----------
 (() => {
   const fs = $("#fSource");
+  const keep = fs.value; fs.length = 1;
   SOURCES.filter(s => R.some(r => r.source === s)).forEach(s => fs.add(new Option(s, s)));
   const order = {Positive:0, "Mixed/Neutral":1, Negative:2, "Insufficient text":3};
   function render() {
@@ -636,7 +659,13 @@ $("#aggTable").innerHTML = `<thead><tr><th>Source</th><th>Metric</th><th>Value</
         <td class="r num small">${r.contentment_contribution == null ? "Excluded" : `${r.contentment_points} pts<br><span class="muted">+${r.contentment_contribution.toFixed(2)}</span>`}</td>
       </tr>`).join("") + "</tbody>";
   }
-  ["change", "input"].forEach(ev => [fs, $("#fClass"), $("#fText")].forEach(n => n.addEventListener(ev, render)));
+  if ([...fs.options].some(o => o.value === keep)) fs.value = keep;
+  tableRender = render;
   render();
 })();
+}
+let tableRender = () => {};
+["change", "input"].forEach(ev => ["#fSource", "#fClass", "#fText"].forEach(id => $(id).addEventListener(ev, () => tableRender())));
+document.querySelectorAll(".scope-btn").forEach(b => b.addEventListener("click", () => { SCOPE = b.dataset.scope; renderAll(); }));
+renderAll();
 </script>

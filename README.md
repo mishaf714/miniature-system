@@ -18,6 +18,14 @@ Open `dashboard/index.html` in a browser. It is self-contained, with the data em
 
 Rebuild after editing the data: `python3 scripts/build.py`
 
+## Reviewer scope
+
+The dashboard opens on **contractor roles**: reviews whose reviewer job title contains
+"consultant", "expert" or "specialist" (`ROLE_KEYWORDS` in `scripts/build.py`). A toggle
+switches to all reviewers. Only reviews with a visible, matching job title are kept, and
+most Glassdoor reviews surfaced without one, so this scope is currently very small.
+`data/reviews.csv` has a `role_match` column; `data/metrics.json` holds both scopes.
+
 ## Methodology
 
 - **Sentiment score** from −1 to +1, assigned per review from its verified written text.

@@ -53,6 +53,7 @@ REVIEWS = [
     # ---------------- Glassdoor ----------------
     gd(79167149, "Work on cutting-edge technology.", 0.6, ["Learning opportunities"], [],
        "Headline praises the work itself."),
+    gd(85001657, "Ideal for Remote Jobs", 0.6, ["Remote work"], [], "Positive about remote work."),
     gd(85002014, "A legitimate company", 0.5, ["Trust & legitimacy", "Overall satisfaction"], [],
        "Affirms legitimacy; mildly positive."),
     gd(85017264, "Great place to work", 0.8, ["Overall satisfaction"], [],
@@ -84,9 +85,11 @@ REVIEWS = [
     gd(94553647, "There's no company as amazing as Mercor!", 1.0, ["Overall satisfaction"], [],
        "Superlative praise."),
     gd(95294235, "Great company", 0.9, ["Compensation", "Coworker relationships", "Overall satisfaction"], [],
-       "Headline and excerpt both strongly positive.", reviewer="Finance Expert", rating=5,
-       excerpt="Cites \"highest pay compared to Industry standards\" and \"great, talented people to work with\".",
-       attribution="specific"),
+       "Headline is plainly positive. Two searches returned conflicting body summaries for this review "
+       "(one strongly positive with a 5-star rating, one 'above average' citing poor communication and "
+       "disorganization), so neither body nor rating is used.",
+       reviewer="Finance Expert", attribution="conflicting",
+       note="Conflicting body summaries across searches; classified from headline only, rating left blank."),
     gd(95878450, "Nice Work Environment", 0.6, ["Culture"], [], "Positive about environment."),
     gd(95912929, "Scam", -0.9, [], ["Trust & legitimacy"],
        "Headline alleges a scam. A positive body excerpt was returned for this URL, but the identical "
@@ -155,6 +158,9 @@ REVIEWS = [
        attribution="specific",
        note="A search summary gave 2025-11-13, the same date as RVW100795889; treated as unverified and left blank."),
     gd(101269595, "Good company", 0.6, ["Overall satisfaction"], [], "Positive overall."),
+    gd(102136443, "What a great and easy way to make some money", 0.8, ["Compensation", "Overall satisfaction"], [],
+       "Strongly positive about earning opportunity.",
+       reviewer="AI Model Trainer (per search summary, unverified)"),
     gd(102421292, "So many red flags", -0.8, [], ["Overall satisfaction"],
        "Strongly negative warning.", reviewer="Operations"),
     gd(102492938, "Terrible work culture", -0.85, [], ["Culture"],
@@ -219,6 +225,10 @@ AGGREGATES = [
          detail="Varies across indexed snapshots", url="https://www.glassdoor.com/Reviews/Mercor-Reviews-E9031572.htm"),
     dict(source="Glassdoor", metric="Sub-ratings", value="Comp 4.3 · WLB 4.2–4.4 · Culture 3.8–4.1 · Career 3.9–4.2",
          detail="Varies across indexed snapshots", url="https://www.glassdoor.com/Reviews/Mercor-Reviews-E9031572.htm"),
+    dict(source="Glassdoor", metric="Job-title review pages", value="Domain Expert · Senior Domain Expert · Consultant · Generalist Expert",
+         detail="Glassdoor has per-title review pages for these contractor roles and says its best reviews come from Domain Expert, "
+                "Senior Domain Expert and Independent Contractor. The individual reviews on those pages were not exposed by search",
+         url="https://www.glassdoor.com/Reviews/Mercor-Domain-Expert-Reviews-EI_IE9031572.0,6_KO7,20.htm"),
     dict(source="Indeed", metric="Overall rating", value=None,
          detail="Not visible in search results", url="https://www.indeed.com/cmp/Mercor/reviews"),
     dict(source="Blind", metric="Company reviews", value="0 reviews, no rating",

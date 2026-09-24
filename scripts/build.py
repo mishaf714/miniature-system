@@ -20,6 +20,14 @@ POS_T, NEG_T = 0.35, -0.35            # sentiment-score thresholds
 POINTS = {"Positive": 100, "Mixed/Neutral": 50, "Negative": 0}
 SOURCES = ["Glassdoor", "Indeed", "Blind", "Reddit", "Comparably", "Trustpilot"]
 
+# Contractor-role scope: reviews whose reviewer job title contains one of these words.
+ROLE_KEYWORDS = ["consultant", "expert", "specialist"]
+SCOPES = {
+    "contractor": dict(label="Consultant / Expert / Specialist titles",
+                       test=lambda r: any(k in (r["reviewer_type"] or "").lower() for k in ROLE_KEYWORDS)),
+    "all": dict(label="All reviewers", test=lambda r: True),
+}
+
 
 def classify(score):
     if score is None:
@@ -51,7 +59,7 @@ def summarize(rows):
         mean_sentiment=round(sum(r["score"] for r in rows) / n, 2))
 
 
-def main():
+def prepare():
     rows = []
     for r in REVIEWS:
         r = dict(r)
@@ -61,8 +69,13 @@ def main():
         r["text_basis"] = ("Headline + search excerpt" if r["excerpt_attribution"] == "specific"
                            else "Headline only")
         r["collected_on"] = COLLECTED_ON
+        r["role_match"] = SCOPES["contractor"]["test"](r)
         rows.append(r)
+    return rows
 
+
+def compute(rows):
+    rows = [dict(r) for r in rows]
     inc = [r for r in rows if r["included"]]
     n_total = len(inc)
     for r in rows:
@@ -87,7 +100,7 @@ def main():
     # Glassdoor ordered by review ID (sequence, not dates)
     gd = sorted([r for r in inc if r["source"] == "Glassdoor"], key=lambda r: r["seq"])
     half = len(gd) // 2
-    gd_seq = dict(
+    gd_seq = None if len(gd) < 6 else dict(
         points=[dict(id=r["id"], seq=r["seq"], classification=r["classification"],
                      score=r["score"], headline=r["headline"], date=r["date"]) for r in gd],
         earlier=dict(range=[gd[0]["seq"], gd[half - 1]["seq"]], **summarize(gd[:half])),
@@ -124,13 +137,34 @@ def main():
                                 if rated else None),
         aggregates=AGGREGATES,
     )
+    return metrics, rows
+
+
+def main():
+    base = prepare()
+    scopes = {}
+    for key, sc in SCOPES.items():
+        metrics, rows = compute([r for r in base if sc["test"](r)])
+        metrics["scope_label"] = sc["label"]
+        metrics["role_keywords"] = ROLE_KEYWORDS
+        scopes[key] = dict(metrics=metrics, reviews=rows)
+        o = metrics["overall"]
+        print(f"[{key}] classified={o['n']} excluded={metrics['records_excluded']} contentment={o['contentment']} "
+              f"pos={o['positive']} neg={o['negative']} mixed={o['mixed']}")
+        for s_, v in metrics["by_source"].items():
+            if v["n"]:
+                print(f"    {s_:11} n={v['n']:2} score={v['contentment']}")
+
+    (ROOT / "data" / "metrics.json").write_text(
+        json.dumps({k: v["metrics"] for k, v in scopes.items()}, indent=2, ensure_ascii=False))
+    rows = scopes["all"]["reviews"]
 
     (ROOT / "data" / "metrics.json").write_text(json.dumps(metrics, indent=2, ensure_ascii=False))
 
     cols = ["id", "source", "data_type", "url", "date", "date_basis", "year", "reviewer_type",
             "headline", "excerpt", "excerpt_attribution", "text_basis", "platform_rating",
             "classification", "score", "pos_themes", "neg_themes", "contentment_points",
-            "contentment_contribution", "included", "rationale", "note", "collected_on"]
+            "contentment_contribution", "included", "role_match", "rationale", "note", "collected_on"]
     with open(ROOT / "data" / "reviews.csv", "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=cols, extrasaction="ignore")
         w.writeheader()
@@ -141,15 +175,9 @@ def main():
             w.writerow(out)
 
     template = (ROOT / "dashboard" / "template.html").read_text(encoding="utf-8")
-    payload = json.dumps(dict(metrics=metrics, reviews=rows), ensure_ascii=False).replace("</", "<\\/")
+    payload = json.dumps(dict(default="contractor", scopes=scopes), ensure_ascii=False).replace("</", "<\\/")
     (ROOT / "dashboard" / "index.html").write_text(template.replace("/*__DATA__*/null", payload),
                                                    encoding="utf-8")
-    o = metrics["overall"]
-    print(f"classified={o['n']} excluded={metrics['records_excluded']} contentment={o['contentment']} "
-          f"pos={o['positive']} neg={o['negative']} mixed={o['mixed']}")
-    for s, v in by_source.items():
-        print(f"  {s:11} n={v['n']:2} score={v['contentment']}")
-    print("  GD earlier", gd_seq["earlier"]["contentment"], "later", gd_seq["later"]["contentment"])
 
 
 if __name__ == "__main__":
