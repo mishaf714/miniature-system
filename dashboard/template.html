@@ -1,0 +1,642 @@
+<title>Mercor Sentiment Monitor</title>
+<meta name="description" content="Employee and contractor review sentiment for Mercor, classified from written review text.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+:root{
+  --bg:#f4f6f8; --card:#ffffff; --ink:#11161d; --ink-2:#434b57; --muted:#6a7280;
+  --line:#dfe3e8; --line-2:#eceff2; --chip:#e9edf1;
+  --pos:#2a78d6; --neg:#e34948; --mix:#9d9b93;
+  --pos-ink:#1c5cab; --neg-ink:#b8302f;
+  --warn-bg:#fff6e0; --warn-ink:#6b4a00; --warn-line:#f0d58a;
+  --na:#eef0f3;
+  --display:"IBM Plex Sans Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#111315; --card:#191c1f; --ink:#eef1f4; --ink-2:#c3c9d1; --muted:#98a0ab;
+    --line:#2d3237; --line-2:#24282c; --chip:#262a2f;
+    --pos:#3987e5; --neg:#e66767; --mix:#8a8983;
+    --pos-ink:#86b6ef; --neg-ink:#f09a9a;
+    --warn-bg:#2b2412; --warn-ink:#f1d28a; --warn-line:#5a4a1e; --na:#202428;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#111315; --card:#191c1f; --ink:#eef1f4; --ink-2:#c3c9d1; --muted:#98a0ab;
+  --line:#2d3237; --line-2:#24282c; --chip:#262a2f;
+  --pos:#3987e5; --neg:#e66767; --mix:#8a8983;
+  --pos-ink:#86b6ef; --neg-ink:#f09a9a;
+  --warn-bg:#2b2412; --warn-ink:#f1d28a; --warn-line:#5a4a1e; --na:#202428;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:15px/1.55 var(--body);margin:0}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:20px;padding-block:28px 64px;display:flex;flex-direction:column;gap:28px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;letter-spacing:-.005em}
+h1{font-size:clamp(28px,4.4vw,44px);font-weight:700;line-height:1.05}
+h2{font-size:22px;font-weight:600}
+h3{font-size:15px;font-weight:600;font-family:var(--body)}
+p{margin:0}
+a{color:var(--pos-ink)}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--pos);outline-offset:2px}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.eyebrow{font:500 12px/1.3 var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+
+header{display:flex;flex-direction:column;gap:10px}
+header .lede{max-width:70ch;color:var(--ink-2)}
+
+.banner{background:var(--warn-bg);border:1px solid var(--warn-line);color:var(--warn-ink);border-radius:8px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start}
+.banner svg{flex:none;margin-top:2px}
+.banner p{max-width:none}
+
+.kpis{display:grid;grid-template-columns:1.4fr repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.kpi{background:var(--card);padding:18px 18px 16px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.kpi .v{font:600 34px/1 var(--mono);font-variant-numeric:tabular-nums}
+.kpi.hero .v{font-size:52px}
+.kpi .s{font-size:13px;color:var(--muted)}
+.kpi .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:1px}
+.meter{height:8px;border-radius:4px;background:var(--line-2);position:relative;overflow:hidden;margin-top:4px}
+.meter i{position:absolute;inset:0 auto 0 0;background:var(--ink);border-radius:4px}
+.meter b{position:absolute;top:0;bottom:0;background:color-mix(in srgb,var(--ink) 18%,transparent)}
+@media (max-width:860px){.kpis{grid-template-columns:1fr 1fr}.kpi.hero{grid-column:1/-1}}
+
+section.panel{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:22px 22px 20px;display:flex;flex-direction:column;gap:16px;min-width:0}
+.panel-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px 20px;align-items:flex-end}
+.panel-head .desc{max-width:72ch;color:var(--ink-2);font-size:14px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:28px}
+@media (max-width:900px){.grid2{grid-template-columns:1fr}}
+
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--ink-2)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:12px;height:12px;border-radius:3px;display:inline-block}
+.sw.pos{background:var(--pos)}.sw.neg{background:var(--neg)}.sw.mix{background:var(--mix)}
+
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line-2);vertical-align:top}
+th{font:500 11.5px/1.3 var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);background:var(--card);position:sticky;top:0;white-space:nowrap}
+td.r,th.r{text-align:right}
+tr:last-child td{border-bottom:none}
+tr.na td{color:var(--muted);background:var(--na)}
+.pill{display:inline-flex;align-items:center;gap:5px;font:500 12px/1 var(--body);padding:4px 8px;border-radius:999px;background:var(--chip);color:var(--ink-2);white-space:nowrap}
+.pill.pos{background:color-mix(in srgb,var(--pos) 16%,transparent);color:var(--pos-ink)}
+.pill.neg{background:color-mix(in srgb,var(--neg) 16%,transparent);color:var(--neg-ink)}
+.pill.mix{background:color-mix(in srgb,var(--mix) 24%,transparent);color:var(--ink-2)}
+.pill.ex{background:transparent;border:1px dashed var(--line);color:var(--muted)}
+.tag{font:500 11px/1 var(--mono);letter-spacing:.03em;padding:3px 6px;border-radius:4px;border:1px solid var(--line);color:var(--muted);white-space:nowrap;display:inline-block}
+.lowN{font:500 11px/1 var(--mono);color:var(--warn-ink);background:var(--warn-bg);border:1px solid var(--warn-line);padding:2px 5px;border-radius:4px;margin-left:6px;white-space:nowrap}
+
+svg.chart{display:block;width:100%;height:auto;overflow:visible}
+svg.chart text{fill:var(--muted);font:12px var(--body)}
+svg.chart text.lbl{fill:var(--ink-2);font:500 13px var(--body)}
+svg.chart text.val{fill:var(--ink);font:500 12px var(--mono)}
+svg.chart .grid{stroke:var(--line-2);stroke-width:1}
+svg.chart .axis{stroke:var(--line);stroke-width:1}
+svg.chart .hit{fill:transparent;cursor:default}
+svg.chart .hit:hover + .mark, svg.chart g.row:hover .mark{opacity:.85}
+.chart-note{font-size:12.5px;color:var(--muted)}
+
+#tip{position:fixed;z-index:10;pointer-events:none;background:var(--ink);color:var(--card);font:13px/1.4 var(--body);padding:8px 10px;border-radius:6px;max-width:300px;box-shadow:0 4px 18px rgba(0,0,0,.18)}
+#tip b{font-weight:600}
+
+.filters{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.filters select,.filters input{font:14px var(--body);color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:6px;padding:7px 10px}
+.filters input{min-width:0;flex:1 1 220px}
+.reviews td.head{min-width:260px;max-width:440px}
+.reviews td.head .ex{display:block;color:var(--muted);font-size:13px;margin-top:4px}
+.reviews td.head .nt{display:block;color:var(--warn-ink);font-size:12.5px;margin-top:4px}
+.themes-cell{display:flex;flex-wrap:wrap;gap:4px;min-width:160px}
+.th-p,.th-n{font-size:12px;padding:2px 6px;border-radius:4px}
+.th-p{color:var(--pos-ink);background:color-mix(in srgb,var(--pos) 10%,transparent)}
+.th-n{color:var(--neg-ink);background:color-mix(in srgb,var(--neg) 10%,transparent)}
+
+.method{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px 32px}
+.method div{display:flex;flex-direction:column;gap:6px}
+.method p,.method li{font-size:14px;color:var(--ink-2)}
+.method ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.formula{font:500 14px/1.5 var(--mono);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:10px 12px;color:var(--ink)}
+.split{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.split .cell{border:1px solid var(--line);border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:4px}
+.split .cell .v{font:600 28px/1 var(--mono)}
+footer{font-size:12.5px;color:var(--muted);text-align:left}
+@media (prefers-reduced-motion:no-preference){.mark{transition:opacity .12s}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Workplace review analysis · data collected <span id="collected"></span></div>
+    <h1>Mercor Employee &amp; Contractor Sentiment</h1>
+    <p class="lede">Each review is classified from its written text: the reviewer's own headline, plus a body excerpt when the excerpt could be tied to that specific review. Star ratings are recorded but never used to classify. Every row links to its source.</p>
+  </header>
+
+  <div class="banner" role="note">
+    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2 1 21h22L12 2Zm0 6 .01 0 .99 7h-2l1-7Zm-1 9h2v2h-2v-2Z"/></svg>
+    <p id="coverage" class="small"></p>
+  </div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <section class="panel" id="by-source">
+    <div class="panel-head">
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div class="eyebrow">1 · Sentiment by website</div>
+        <h2>Contentment score and sentiment mix, by source</h2>
+        <p class="desc">All years in the sample combined per source (see section 6 for source × year). Sources with no accessible reviews are listed and marked unavailable, not given a value.</p>
+      </div>
+      <div class="legend"><span><i class="sw pos"></i>Positive</span><span><i class="sw mix"></i>Mixed / neutral</span><span><i class="sw neg"></i>Negative</span></div>
+    </div>
+    <div id="sourceChart"></div>
+    <div class="tbl-wrap"><table id="sourceTable"></table></div>
+  </section>
+
+  <section class="panel" id="over-time">
+    <div class="panel-head">
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div class="eyebrow">2 · Sentiment over time</div>
+        <h2>Is sentiment getting better or worse?</h2>
+        <p class="desc" id="timeDesc"></p>
+      </div>
+    </div>
+    <div class="grid2">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <h3>Contentment score by review year · all sources</h3>
+        <div id="yearChart"></div>
+        <p class="chart-note">Bars show the score; whiskers show a 95% interval where n &gt; 1. The "Year unavailable" group is shown for comparison and is not a point in time.</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <h3>Glassdoor · reviews in review-ID order · contentment</h3>
+        <div id="seqChart"></div>
+        <p class="chart-note" id="seqNote"></p>
+      </div>
+    </div>
+    <div class="split" id="seqSplit"></div>
+  </section>
+
+  <div class="grid2">
+    <section class="panel" id="volume">
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div class="eyebrow">3 · Reviews by year</div>
+        <h2>Review volume by year · all sources</h2>
+        <p class="desc">Counts every collected record. Records excluded for insufficient text are shown in outline.</p>
+      </div>
+      <div id="volumeChart"></div>
+    </section>
+    <section class="panel" id="posneg">
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div class="eyebrow">4 · Positive vs. negative</div>
+        <h2>Positive and negative reviews by source · all years</h2>
+        <p class="desc">Negative counts extend left of the axis, positive counts right. Mixed/neutral counts are shown as text.</p>
+      </div>
+      <div id="pnChart"></div>
+    </section>
+  </div>
+
+  <section class="panel" id="themes">
+    <div class="panel-head">
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div class="eyebrow">5 · Themes</div>
+        <h2>Which topics drive positive and negative sentiment</h2>
+        <p class="desc">Number of classified reviews (all sources, all years) that raise each theme favourably or unfavourably. A review can raise several themes. Themes are tagged only from verified text.</p>
+      </div>
+      <div class="legend"><span><i class="sw neg"></i>Raised negatively</span><span><i class="sw pos"></i>Raised positively</span></div>
+    </div>
+    <div id="themeChart"></div>
+  </section>
+
+  <section class="panel" id="source-year">
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div class="eyebrow">6 · Source × year</div>
+      <h2>Calculated metrics by source and year</h2>
+      <p class="desc">Every row is a calculated metric over the individual reviews for that source and year. Rows with fewer than 10 reviews are flagged as low-n.</p>
+    </div>
+    <div class="tbl-wrap"><table id="syTable"></table></div>
+  </section>
+
+  <section class="panel" id="aggregates">
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div class="eyebrow">7 · Platform-reported figures</div>
+      <h2>Aggregated platform ratings (not used for classification)</h2>
+      <p class="desc">These figures are what each platform reports across all of its reviews, as they appeared in the search index. Snapshot dates are not shown there and snapshots disagree, so ranges are given. <span id="indivRating"></span></p>
+    </div>
+    <div class="tbl-wrap"><table id="aggTable"></table></div>
+  </section>
+
+  <section class="panel" id="data">
+    <div class="panel-head">
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div class="eyebrow">8 · Review-level data</div>
+        <h2>Every record in the dataset</h2>
+        <p class="desc">Headlines are verbatim as indexed. Excerpts are search-index paraphrases, used only where they matched that specific review. The same data ships as <span class="num">data/reviews.csv</span> in the repository.</p>
+      </div>
+    </div>
+    <div class="filters">
+      <label class="small muted" for="fSource">Source</label>
+      <select id="fSource"><option value="">All</option></select>
+      <label class="small muted" for="fClass">Classification</label>
+      <select id="fClass"><option value="">All</option><option>Positive</option><option>Mixed/Neutral</option><option>Negative</option><option>Insufficient text</option></select>
+      <input id="fText" type="search" placeholder="Search headline, excerpt, theme" aria-label="Search reviews">
+      <span class="small muted num" id="fCount"></span>
+    </div>
+    <div class="tbl-wrap" style="max-height:640px;overflow:auto"><table class="reviews" id="reviewTable"></table></div>
+  </section>
+
+  <section class="panel" id="method">
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div class="eyebrow">9 · Methodology</div>
+      <h2>How the numbers are made</h2>
+    </div>
+    <div class="method">
+      <div>
+        <h3>Classification</h3>
+        <p>Each review's verified written text is scored for sentiment on a scale from −1 (entirely negative) to +1 (entirely positive). The score reflects what the text says, not the star rating. A 4-star review whose text is mostly complaints scores negative.</p>
+        <ul>
+          <li><b>Positive</b>: score ≥ +0.35</li>
+          <li><b>Mixed / neutral</b>: −0.35 &lt; score &lt; +0.35</li>
+          <li><b>Negative</b>: score ≤ −0.35</li>
+          <li><b>Insufficient text</b>: the headline has no evaluative content (for example "Review" or "-") and no attributable excerpt exists. These records are listed but excluded from every metric.</li>
+        </ul>
+        <p>Scores were assigned by an AI analyst (Claude) reading each text, with a one-line rationale stored per review. They are judgments, not output from a lexicon model.</p>
+      </div>
+      <div>
+        <h3>Contentment score (0–100)</h3>
+        <p>Each classified review contributes points by class. The score is the average:</p>
+        <div class="formula">Contentment = (100·P + 50·M + 0·N) ÷ (P + M + N)<br>= Positive% + ½ × Mixed%</div>
+        <p>0 means every review is negative; 50 means balanced or entirely neutral; 100 means every review is positive. The same formula is used for every source, year and group, so scores compare directly. A review's <i>contribution</i> to the overall score is its points ÷ total classified reviews. The interval shown is ±1.96 standard errors of the per-review points. Treat groups under 10 reviews as indicative only.</p>
+      </div>
+      <div>
+        <h3>How data was collected</h3>
+        <p>Collected on <span class="c-date"></span>. Direct page access to Glassdoor, Indeed, Blind, Reddit, Trustpilot and Comparably was blocked from the collection environment. Records come from web-search index results, which expose each review's URL and headline, and sometimes a summary of its body.</p>
+        <ul>
+          <li>Headlines are the reviewer's own words, tied to the review URL.</li>
+          <li>Two URLs were returned with the same body excerpt, so excerpts are used only when they are specific to one review. Conflicting excerpts are flagged and ignored.</li>
+          <li>Dates come from search summaries. A date that conflicted with another review's date was discarded.</li>
+          <li>Nothing is estimated or generated: missing fields read "Unavailable".</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Known biases</h3>
+        <ul>
+          <li><b>Not a random sample.</b> Search queries covered both positive and negative wording, but the index surfaces a subset. Glassdoor itself reports 4.1–4.2★ and 78–90% "recommend" across 188–734 reviews, which suggests the platform-wide population is more positive than this sample.</li>
+          <li>Most reviews are undated here, so the year view is thin. The Glassdoor review-ID ordering is the better trend signal, with the caveat stated in section 2.</li>
+          <li>Blind has no formal reviews. Its threads are mostly candidates describing interviews, not current or former workers.</li>
+          <li>Glassdoor lists Mercor staff and hourly contractors under one company page; reviewer type is shown where the job title was visible.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <footer>Built from <span class="num">data/reviews_raw.py</span> by <span class="num">scripts/build.py</span>. Theme vocabulary: compensation, work-life balance, management, culture, career growth, learning, workload, job security, benefits, remote work, leadership, coworker relationships, overall satisfaction, plus communication, organization &amp; process, trust &amp; legitimacy, tools &amp; platform.</footer>
+</div>
+<div id="tip" hidden></div>
+
+<script>
+const DATA = /*__DATA__*/null;
+const M = DATA.metrics, R = DATA.reviews;
+const SOURCES = ["Glassdoor","Indeed","Blind","Reddit","Comparably","Trustpilot"];
+const NS = "http://www.w3.org/2000/svg";
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const pct = v => v == null ? "—" : `${Math.round(v)}%`;
+const yr = y => y == null ? "Year unavailable" : String(y);
+const CLS = {Positive:"pos","Mixed/Neutral":"mix",Negative:"neg","Insufficient text":"ex"};
+const fmtDate = d => d ? new Date(d + "T00:00:00Z").toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric",timeZone:"UTC"}) : "Unavailable";
+
+function el(tag, attrs = {}, parent) {
+  const e = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function svg(w, h, host) {
+  const s = el("svg", {viewBox:`0 0 ${w} ${h}`, class:"chart", role:"img"});
+  host.replaceChildren(s); return s;
+}
+function txt(parent, x, y, s, attrs = {}) { const t = el("text", {x, y, ...attrs}, parent); t.textContent = s; return t; }
+// Bar with 4px rounding only on the data end (right side)
+function hbar(parent, x, y, w, h, fill, roundRight = true) {
+  if (w <= 0) return null;
+  const r = Math.min(4, w, h / 2);
+  const d = roundRight
+    ? `M${x},${y}h${w - r}a${r},${r} 0 0 1 ${r},${r}v${h - 2 * r}a${r},${r} 0 0 1 -${r},${r}h-${w - r}z`
+    : `M${x + w},${y}h-${w - r}a${r},${r} 0 0 0 -${r},${r}v${h - 2 * r}a${r},${r} 0 0 0 ${r},${r}h${w - r}z`;
+  return el("path", {d, fill, class:"mark"}, parent);
+}
+function vbar(parent, x, y, w, h, attrs) {
+  if (h <= 0) return null;
+  const r = Math.min(4, w / 2, h);
+  return el("path", {d:`M${x},${y + h}v-${h - r}a${r},${r} 0 0 1 ${r},-${r}h${w - 2 * r}a${r},${r} 0 0 1 ${r},${r}v${h - r}z`, class:"mark", ...attrs}, parent);
+}
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const C = () => ({pos:"var(--pos)", neg:"var(--neg)", mix:"var(--mix)"});
+
+// Tooltip
+const tip = $("#tip");
+function bindTip(node, html) {
+  node.addEventListener("mousemove", e => {
+    tip.innerHTML = html; tip.hidden = false;
+    const x = Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 8);
+    const y = Math.min(e.clientY + 14, innerHeight - tip.offsetHeight - 8);
+    tip.style.left = x + "px"; tip.style.top = y + "px";
+  });
+  node.addEventListener("mouseleave", () => tip.hidden = true);
+}
+
+// ---------- Header ----------
+document.querySelectorAll("#collected,.c-date").forEach(n => n.textContent = fmtDate(M.collected_on));
+const O = M.overall;
+const avail = SOURCES.filter(s => M.by_source[s].n > 0);
+$("#coverage").innerHTML =
+  `<b>${O.n} reviews classified from ${avail.length} of ${SOURCES.length} target sources</b> (${avail.join(", ")}). ` +
+  `Reddit and Comparably are <b>unavailable</b> (blocked or no Mercor profile), and Trustpilot shows only an aggregate rating. ` +
+  `Records come from search-index results, not a random sample. Glassdoor's own aggregate (4.1–4.2★) suggests its full review population is more positive than this sample. ` +
+  `Only ${O.n - M.by_year.find(y => y.year == null).n} classified reviews have a verified date. <a href="#method">Methodology</a>`;
+
+// ---------- KPIs ----------
+(() => {
+  const ci = O.ci ? `95% interval ${O.ci[0]}–${O.ci[1]}` : "";
+  $("#kpis").innerHTML = `
+    <div class="kpi hero">
+      <div class="eyebrow">Overall contentment score · all sources · all years</div>
+      <div class="v">${Math.round(O.contentment)}<span class="muted" style="font-size:20px"> / 100</span></div>
+      <div class="meter" aria-hidden="true"><b style="left:${O.ci?.[0] ?? 0}%;right:${100 - (O.ci?.[1] ?? 0)}%"></b><i style="width:${O.contentment}%"></i></div>
+      <div class="s">${ci} · calculated from ${O.n} written reviews</div>
+    </div>
+    <div class="kpi"><div class="eyebrow"><i class="dot" style="background:var(--pos)"></i>Positive reviews</div><div class="v">${O.positive}</div><div class="s">${pct(O.pos_pct)} of classified</div></div>
+    <div class="kpi"><div class="eyebrow"><i class="dot" style="background:var(--neg)"></i>Negative reviews</div><div class="v">${O.negative}</div><div class="s">${pct(O.neg_pct)} of classified</div></div>
+    <div class="kpi"><div class="eyebrow"><i class="dot" style="background:var(--mix)"></i>Mixed / neutral</div><div class="v">${O.mixed}</div><div class="s">${pct(O.mixed_pct)} of classified</div></div>
+    <div class="kpi"><div class="eyebrow">Reviews analyzed</div><div class="v">${O.n}</div><div class="s">+${M.records_excluded} listed, excluded for insufficient text</div></div>`;
+})();
+
+// ---------- 1. By source: stacked 100% bars ----------
+(() => {
+  const rows = SOURCES.map(s => ({s, ...M.by_source[s]}));
+  const W = 1100, rowH = 40, top = 22, left = 120, right = 150, H = top + rows.length * rowH + 6;
+  const s = svg(W, H, $("#sourceChart"));
+  s.setAttribute("aria-label", "Stacked bars of positive, mixed and negative share per source, with contentment score");
+  const pw = W - left - right;
+  [0, 25, 50, 75, 100].forEach(v => {
+    const x = left + pw * v / 100;
+    el("line", {x1:x, x2:x, y1:top - 6, y2:H - 6, class:"grid"}, s);
+    txt(s, x, 12, v + "%", {"text-anchor":"middle"});
+  });
+  txt(s, W - right + 20, 12, "Contentment");
+  rows.forEach((r, i) => {
+    const y = top + i * rowH, h = 22;
+    const g = el("g", {class:"row"}, s);
+    txt(g, 0, y + 16, r.s, {class:"lbl"});
+    if (!r.n) {
+      el("rect", {x:left, y, width:pw, height:h, rx:4, fill:"var(--na)", stroke:"var(--line)", "stroke-dasharray":"0"}, g);
+      txt(g, left + 10, y + 15, r.s === "Trustpilot" ? "Unavailable: aggregate rating only, no individual reviews reachable" : "Unavailable: no reviews could be accessed");
+      txt(g, W - right + 20, y + 16, "—", {class:"val"});
+      return;
+    }
+    let x = left;
+    const segs = [["pos", r.positive, "Positive"], ["mix", r.mixed, "Mixed / neutral"], ["neg", r.negative, "Negative"]];
+    segs.forEach(([k, c, name], j) => {
+      const w = pw * c / r.n; if (!w) return;
+      const last = segs.slice(j + 1).every(t => !t[1]);
+      const gap = last ? 0 : 2;
+      const p = last ? hbar(g, x, y, w, h, C()[k]) : el("rect", {x, y, width:Math.max(0, w - gap), height:h, fill:C()[k], class:"mark", rx: j === 0 ? 0 : 0}, g);
+      bindTip(p, `<b>${r.s} · all years · ${name}</b><br>${c} of ${r.n} reviews (${Math.round(100 * c / r.n)}%)`);
+      if (w > 34) txt(g, x + 6, y + 15, Math.round(100 * c / r.n) + "%", {class:"val", style:`fill:${k === "mix" ? "var(--ink)" : "#fff"}`});
+      x += w;
+    });
+    txt(g, W - right + 20, y + 16, `${Math.round(r.contentment)}`, {class:"val", style:"font-size:15px"});
+    txt(g, W - right + 52, y + 16, `n=${r.n}${r.n < 10 ? " · low n" : ""}`);
+  });
+
+  const agg = s => M.aggregates.find(a => a.source === s && a.metric === "Overall rating");
+  const years = s => { const ys = [...new Set(R.filter(r => r.source === s && r.included).map(r => yr(r.year)))]; return ys.length ? ys.join(", ") : "—"; };
+  const t = $("#sourceTable");
+  t.innerHTML = `<thead><tr><th>Source</th><th>Years in sample</th><th class="r">Reviews</th><th class="r">Positive</th><th class="r">Negative</th><th class="r">Mixed</th><th class="r">Contentment</th><th>Platform rating (aggregate)</th><th>Data type</th></tr></thead><tbody>` +
+    rows.map(r => {
+      const a = agg(r.s);
+      const dtype = r.s === "Blind" ? "Individual discussion threads" : r.n ? "Individual reviews" : r.s === "Trustpilot" ? "Aggregated rating only" : "Unavailable";
+      return `<tr class="${r.n ? "" : "na"}"><td><b>${r.s}</b></td><td>${years(r.s)}</td><td class="r num">${r.n || "Unavailable"}</td>
+        <td class="r num">${r.n ? `${r.positive} · ${pct(r.pos_pct)}` : "—"}</td><td class="r num">${r.n ? `${r.negative} · ${pct(r.neg_pct)}` : "—"}</td><td class="r num">${r.n ? `${r.mixed} · ${pct(r.mixed_pct)}` : "—"}</td>
+        <td class="r num"><b>${r.n ? Math.round(r.contentment) : "—"}</b>${r.ci ? `<span class="muted"> (${r.ci[0]}–${r.ci[1]})</span>` : ""}${r.n && r.n < 10 ? '<span class="lowN">low n</span>' : ""}</td>
+        <td>${a?.value ? `<a href="${a.url}" target="_blank" rel="noopener">${esc(a.value)}</a>` : `<span class="muted">Unavailable</span>`}</td><td><span class="tag">${dtype}</span></td></tr>`;
+    }).join("") + "</tbody>";
+})();
+
+// ---------- 2a. Year chart ----------
+(() => {
+  const rows = M.by_year;
+  const W = 520, H = 250, l = 36, b = 44, t = 16, pw = W - l - 10, ph = H - t - b;
+  const s = svg(W, H, $("#yearChart"));
+  s.setAttribute("aria-label", "Contentment score by review year");
+  [0, 25, 50, 75, 100].forEach(v => {
+    const y = t + ph - ph * v / 100;
+    el("line", {x1:l, x2:W - 10, y1:y, y2:y, class: v ? "grid" : "axis"}, s);
+    txt(s, l - 6, y + 4, v, {"text-anchor":"end"});
+  });
+  const bw = Math.min(70, pw / rows.length - 30);
+  rows.forEach((r, i) => {
+    const cx = l + pw * (i + .5) / rows.length;
+    const h = ph * r.contentment / 100;
+    const undated = r.year == null;
+    const p = h > 0 ? vbar(s, cx - bw / 2, t + ph - h, bw, h, {fill: undated ? "var(--mix)" : "var(--ink-2)"})
+                    : el("rect", {x:cx - bw / 2, y:t + ph - 2, width:bw, height:2, fill:"var(--ink-2)", class:"mark"}, s);
+    if (r.ci) {
+      const y0 = t + ph - ph * r.ci[0] / 100, y1 = t + ph - ph * r.ci[1] / 100;
+      el("line", {x1:cx, x2:cx, y1:y0, y2:y1, stroke:"var(--ink)", "stroke-width":1.5}, s);
+      [y0, y1].forEach(y => el("line", {x1:cx - 6, x2:cx + 6, y1:y, y2:y, stroke:"var(--ink)", "stroke-width":1.5}, s));
+    }
+    txt(s, cx + bw / 2 + 4, t + ph - h - 4, Math.round(r.contentment), {class:"val"});
+    txt(s, cx, H - b + 18, yr(r.year), {"text-anchor":"middle", class:"lbl"});
+    txt(s, cx, H - b + 34, `n=${r.n}${r.n < 10 ? " · low n" : ""}`, {"text-anchor":"middle"});
+    const hit = el("rect", {x:cx - bw / 2 - 10, y:t, width:bw + 20, height:ph, class:"hit"}, s);
+    bindTip(hit, `<b>All sources · ${yr(r.year)} · contentment</b><br>Score ${Math.round(r.contentment)} from ${r.n} review${r.n > 1 ? "s" : ""}<br>${r.positive} positive · ${r.mixed} mixed · ${r.negative} negative${r.ci ? `<br>95% interval ${r.ci[0]}–${r.ci[1]}` : ""}`);
+  });
+  const dated = rows.filter(r => r.year != null).reduce((a, r) => a + r.n, 0);
+  $("#timeDesc").textContent = `Only ${dated} of ${O.n} classified reviews carry a verified date, too few for a reliable year-by-year trend. The Glassdoor panel orders reviews by their review ID, which Glassdoor assigns in submission order, so ID order approximates time order even where dates are unavailable.`;
+})();
+
+// ---------- 2b. Glassdoor sequence ----------
+(() => {
+  const G = M.glassdoor_sequence, pts = G.points, n = pts.length;
+  const W = 520, H = 250, l = 36, r = 10, t = 16, b = 44, pw = W - l - r, ph = H - t - b;
+  const s = svg(W, H, $("#seqChart"));
+  s.setAttribute("aria-label", "Glassdoor reviews in review ID order with rolling contentment line");
+  [0, 25, 50, 75, 100].forEach(v => {
+    const y = t + ph - ph * v / 100;
+    el("line", {x1:l, x2:W - r, y1:y, y2:y, class: v ? "grid" : "axis"}, s);
+    txt(s, l - 6, y + 4, v, {"text-anchor":"end"});
+  });
+  const X = i => l + pw * (i + .5) / n;
+  const P = {Positive:100, "Mixed/Neutral":50, Negative:0};
+  const win = 9, roll = pts.map((_, i) => {
+    const a = Math.max(0, i - (win >> 1)), z = Math.min(n, i + (win >> 1) + 1);
+    const sl = pts.slice(a, z); return sl.reduce((q, p) => q + P[p.classification], 0) / sl.length;
+  });
+  // half divider
+  const hx = (X(n / 2 - 1) + X(n / 2)) / 2;
+  el("line", {x1:hx, x2:hx, y1:t, y2:t + ph, stroke:"var(--line)", "stroke-width":1}, s);
+  txt(s, hx - 6, t + 12, "earlier half", {"text-anchor":"end"});
+  txt(s, hx + 6, t + 12, "later half");
+  el("path", {d: roll.map((v, i) => `${i ? "L" : "M"}${X(i)},${t + ph - ph * v / 100}`).join(""), fill:"none", stroke:"var(--ink)", "stroke-width":2, "stroke-linejoin":"round"}, s);
+  pts.forEach((p, i) => {
+    const jitter = p.classification === "Positive" ? -8 : p.classification === "Negative" ? 8 : 0;
+    const cy = t + ph - ph * P[p.classification] / 100 + jitter;
+    const c = el("circle", {cx:X(i), cy, r:4.5, fill:C()[CLS[p.classification]], stroke:"var(--card)", "stroke-width":2, class:"mark"}, s);
+    const hit = el("rect", {x:X(i) - pw / n / 2, y:t, width:pw / n, height:ph, class:"hit"}, s);
+    bindTip(hit, `<b>Glassdoor · RVW${p.seq}</b><br>"${esc(p.headline)}"<br>${p.classification} (score ${p.score > 0 ? "+" : ""}${p.score})<br>Date: ${fmtDate(p.date)}<br>Rolling contentment (9 reviews): ${Math.round(roll[i])}`);
+  });
+  G.anchors.forEach(a => {
+    const i = pts.findIndex(p => p.seq === a.seq);
+    txt(s, X(i), H - b + 18, fmtDate(a.date).replace(/^\d+ /, ""), {"text-anchor":"middle", class:"lbl"});
+    el("line", {x1:X(i), x2:X(i), y1:t + ph, y2:t + ph + 5, stroke:"var(--ink-2)"}, s);
+  });
+  txt(s, l, H - 6, `← earlier review IDs`, {});
+  txt(s, W - r, H - 6, `later review IDs →`, {"text-anchor":"end"});
+  $("#seqNote").innerHTML = `Dots are individual Glassdoor reviews (blue positive, gray mixed, red negative), ordered by review ID from RVW${pts[0].seq} to RVW${pts[n - 1].seq}. The line is a rolling contentment score over 9 reviews. Month labels mark the only reviews with a verified date. Assumption: review IDs increase with submission time.`;
+  const e = G.earlier, z = G.later;
+  $("#seqSplit").innerHTML = [
+    ["Glassdoor · earlier half (by ID)", e, `RVW${e.range[0]}–${e.range[1]} · includes Aug 2024`],
+    ["Glassdoor · later half (by ID)", z, `RVW${z.range[0]}–${z.range[1]} · includes Nov 2025`],
+  ].map(([h, v, sub]) => `<div class="cell"><span class="eyebrow">${h}</span><span class="v">${Math.round(v.contentment)}</span><span class="small muted">${v.n} reviews · ${v.positive} pos · ${v.mixed} mixed · ${v.negative} neg<br>${sub}${v.ci ? ` · 95% interval ${v.ci[0]}–${v.ci[1]}` : ""}</span></div>`).join("") +
+  `<div class="cell"><span class="eyebrow">Change, later vs earlier</span><span class="v">${z.contentment - e.contentment > 0 ? "+" : ""}${Math.round(z.contentment - e.contentment)}</span><span class="small muted">Contentment points. In this sample, recent Glassdoor reviews are markedly less positive. The halves' intervals overlap, so the direction is suggestive, not conclusive.</span></div>`;
+})();
+
+// ---------- 3. Volume ----------
+(() => {
+  const rows = M.volume_by_year;
+  const W = 520, H = 240, l = 30, t = 18, b = 40, pw = W - l - 10, ph = H - t - b;
+  const max = Math.max(...rows.map(r => r.included + r.excluded));
+  const nice = Math.ceil(max / 10) * 10;
+  const s = svg(W, H, $("#volumeChart"));
+  s.setAttribute("aria-label", "Number of collected reviews by year");
+  for (let v = 0; v <= nice; v += nice / 5) {
+    const y = t + ph - ph * v / nice;
+    el("line", {x1:l, x2:W - 10, y1:y, y2:y, class: v ? "grid" : "axis"}, s);
+    txt(s, l - 6, y + 4, v, {"text-anchor":"end"});
+  }
+  const bw = Math.min(64, pw / rows.length - 28);
+  rows.forEach((r, i) => {
+    const cx = l + pw * (i + .5) / rows.length;
+    const hi = ph * r.included / nice, he = ph * r.excluded / nice;
+    if (r.included) {
+      if (r.excluded) el("rect", {x:cx - bw / 2, y:t + ph - hi, width:bw, height:hi, fill:"var(--ink-2)", class:"mark"}, s);
+      else vbar(s, cx - bw / 2, t + ph - hi, bw, hi, {fill:"var(--ink-2)"});
+    }
+    if (r.excluded) {
+      const y0 = t + ph - hi - he + (r.included ? 0 : 0);
+      el("rect", {x:cx - bw / 2 + .75, y:y0 + .75, width:bw - 1.5, height:Math.max(0, he - (r.included ? 2.75 : 1.5)), fill:"none", stroke:"var(--ink-2)", "stroke-width":1.5, rx:3}, s);
+    }
+    txt(s, cx, t + ph - hi - he - 6, r.included + r.excluded, {"text-anchor":"middle", class:"val"});
+    txt(s, cx, H - b + 18, yr(r.year), {"text-anchor":"middle", class:"lbl"});
+    const hit = el("rect", {x:cx - bw / 2 - 10, y:t, width:bw + 20, height:ph, class:"hit"}, s);
+    const bySrc = SOURCES.map(so => [so, R.filter(x => x.source === so && x.year === r.year).length]).filter(x => x[1]).map(x => `${x[0]} ${x[1]}`).join(" · ");
+    bindTip(hit, `<b>All sources · ${yr(r.year)} · review volume</b><br>${r.included} classified, ${r.excluded} excluded<br>${bySrc}`);
+  });
+})();
+
+// ---------- 4. Positive vs negative ----------
+(() => {
+  const rows = SOURCES.map(s => ({s, ...M.by_source[s]}));
+  const W = 520, rowH = 40, t = 26, l = 96, H = t + rows.length * rowH + 4;
+  const max = Math.max(...rows.map(r => Math.max(r.positive, r.negative)), 1);
+  const nice = Math.ceil(max / 5) * 5;
+  const s = svg(W, H, $("#pnChart"));
+  s.setAttribute("aria-label", "Positive and negative review counts per source");
+  const pw = W - l - 16, mid = l + pw / 2, sc = (pw / 2) / nice;
+  for (let v = -nice; v <= nice; v += nice / 2.5 >= 1 ? Math.round(nice / 2.5) : 1) {
+    const x = mid + v * sc;
+    el("line", {x1:x, x2:x, y1:t - 6, y2:H - 4, class: v ? "grid" : "axis"}, s);
+    txt(s, x, 12, Math.abs(v), {"text-anchor":"middle"});
+  }
+  txt(s, mid - 6, 24, "negative", {"text-anchor":"end"}); txt(s, mid + 6, 24, "positive");
+  rows.forEach((r, i) => {
+    const y = t + i * rowH + 6, h = 20;
+    txt(s, 0, y + 15, r.s, {class:"lbl"});
+    if (!r.n) { txt(s, mid + 8, y + 15, "Unavailable"); return; }
+    const pn = hbar(s, mid - r.negative * sc, y, r.negative * sc - 1, h, "var(--neg)", false);
+    const pp = hbar(s, mid + 1, y, r.positive * sc, h, "var(--pos)", true);
+    if (r.negative) txt(s, mid - r.negative * sc - 6, y + 15, r.negative, {"text-anchor":"end", class:"val"});
+    if (r.positive) txt(s, mid + r.positive * sc + 6, y + 15, `${r.positive}${r.mixed ? `  (+${r.mixed} mixed)` : ""}`, {class:"val"});
+    const hit = el("rect", {x:l, y:y - 4, width:pw, height:h + 8, class:"hit"}, s);
+    bindTip(hit, `<b>${r.s} · all years · positive vs negative</b><br>${r.positive} positive (${pct(r.pos_pct)}) · ${r.negative} negative (${pct(r.neg_pct)})<br>${r.mixed} mixed · n=${r.n}`);
+  });
+})();
+
+// ---------- 5. Themes ----------
+(() => {
+  const rows = M.themes;
+  const W = 1100, rowH = 30, t = 28, l = 190, H = t + rows.length * rowH + 4;
+  const max = Math.max(...rows.map(r => Math.max(r.positive, r.negative)));
+  const nice = Math.ceil(max / 5) * 5;
+  const s = svg(W, H, $("#themeChart"));
+  s.setAttribute("aria-label", "Theme mentions, negative left and positive right");
+  const pw = W - l - 40, mid = l + pw / 2, sc = (pw / 2) / nice;
+  for (let v = -nice; v <= nice; v += 5) {
+    const x = mid + v * sc;
+    el("line", {x1:x, x2:x, y1:t - 6, y2:H - 4, class: v ? "grid" : "axis"}, s);
+    txt(s, x, 12, Math.abs(v), {"text-anchor":"middle"});
+  }
+  txt(s, mid - 6, 24, "reviews raising it negatively", {"text-anchor":"end"}); txt(s, mid + 6, 24, "reviews raising it positively");
+  rows.forEach((r, i) => {
+    const y = t + i * rowH + 5, h = 18;
+    txt(s, 0, y + 13, r.theme, {class:"lbl"});
+    hbar(s, mid - r.negative * sc, y, r.negative * sc - 1, h, "var(--neg)", false);
+    hbar(s, mid + 1, y, r.positive * sc, h, "var(--pos)", true);
+    if (r.negative) txt(s, mid - r.negative * sc - 6, y + 13, r.negative, {"text-anchor":"end", class:"val"});
+    if (r.positive) txt(s, mid + r.positive * sc + 6, y + 13, r.positive, {class:"val"});
+    const hit = el("rect", {x:0, y:y - 5, width:W, height:rowH, class:"hit"}, s);
+    const ex = R.filter(x => x.included && (x.pos_themes.includes(r.theme) || x.neg_themes.includes(r.theme))).slice(0, 4).map(x => `${x.source}: "${esc(x.headline.slice(0, 60))}${x.headline.length > 60 ? "…" : ""}"`).join("<br>");
+    bindTip(hit, `<b>${r.theme} · all sources · all years</b><br>${r.positive} positive · ${r.negative} negative mentions<br><span style="opacity:.8">${ex}</span>`);
+  });
+  const missing = ["Career growth", "Benefits"].filter(tm => !rows.some(r => r.theme === tm));
+  if (missing.length) {
+    const p = document.createElement("p"); p.className = "chart-note";
+    p.textContent = `Not raised in any verified text: ${missing.join(", ")}. Glassdoor's aggregate cons mention "No benefits = No health insurance", but that quote could not be tied to a specific review.`;
+    $("#themeChart").appendChild(p);
+  }
+})();
+
+// ---------- 6. Source × year ----------
+$("#syTable").innerHTML = `<thead><tr><th>Source</th><th>Year</th><th class="r">Reviews</th><th class="r">Positive</th><th class="r">Negative</th><th class="r">Mixed</th><th class="r">Contentment score</th><th>Data type</th></tr></thead><tbody>` +
+  M.by_source_year.map(r => `<tr><td><b>${r.source}</b></td><td>${yr(r.year)}</td><td class="r num">${r.n}</td><td class="r num">${pct(r.pos_pct)}</td><td class="r num">${pct(r.neg_pct)}</td><td class="r num">${pct(r.mixed_pct)}</td><td class="r num"><b>${Math.round(r.contentment)}</b>${r.n < 10 ? '<span class="lowN">low n</span>' : ""}</td><td><span class="tag">Calculated metric</span></td></tr>`).join("") +
+  SOURCES.filter(s => !M.by_source[s].n).map(s => `<tr class="na"><td><b>${s}</b></td><td>All years</td><td class="r">Unavailable</td><td class="r">—</td><td class="r">—</td><td class="r">—</td><td class="r">—</td><td><span class="tag">No data</span></td></tr>`).join("") + "</tbody>";
+
+// ---------- 7. Aggregates ----------
+$("#indivRating").textContent = `Only ${M.individual_ratings.n} individual reviews had a star rating visible (mean ${M.individual_ratings.mean}★), too few to report as an average.`;
+$("#aggTable").innerHTML = `<thead><tr><th>Source</th><th>Metric</th><th>Value</th><th>Detail</th><th>Data type</th></tr></thead><tbody>` +
+  M.aggregates.map(a => `<tr class="${a.value ? "" : "na"}"><td><b>${a.source}</b></td><td>${esc(a.metric)}</td><td class="num">${a.value ? esc(a.value) : "Unavailable"}</td><td class="small">${esc(a.detail)} · <a href="${a.url}" target="_blank" rel="noopener">source</a></td><td><span class="tag">${a.value ? "Aggregated platform rating" : "Unavailable"}</span></td></tr>`).join("") + "</tbody>";
+
+// ---------- 8. Review table ----------
+(() => {
+  const fs = $("#fSource");
+  SOURCES.filter(s => R.some(r => r.source === s)).forEach(s => fs.add(new Option(s, s)));
+  const order = {Positive:0, "Mixed/Neutral":1, Negative:2, "Insufficient text":3};
+  function render() {
+    const src = fs.value, cl = $("#fClass").value, q = $("#fText").value.trim().toLowerCase();
+    const rows = R.filter(r => (!src || r.source === src) && (!cl || r.classification === cl) &&
+      (!q || [r.headline, r.excerpt, r.reviewer_type, ...r.pos_themes, ...r.neg_themes].join(" ").toLowerCase().includes(q)))
+      .sort((a, b) => SOURCES.indexOf(a.source) - SOURCES.indexOf(b.source) || (b.seq ?? 0) - (a.seq ?? 0));
+    $("#fCount").textContent = `${rows.length} of ${R.length} records`;
+    $("#reviewTable").innerHTML = `<thead><tr><th>Review ID</th><th>Source · date</th><th>Reviewer type</th><th>Written review</th><th class="r">Platform rating</th><th>Classification</th><th class="r">Sentiment</th><th>Themes</th><th class="r">Contribution</th></tr></thead><tbody>` +
+      rows.map(r => `<tr>
+        <td class="num small"><a href="${r.url}" target="_blank" rel="noopener">${r.id}</a><br><span class="tag">${r.data_type}</span></td>
+        <td>${r.source}<br><span class="small ${r.date ? "" : "muted"}">${fmtDate(r.date)}</span></td>
+        <td class="small">${r.reviewer_type ? esc(r.reviewer_type) : '<span class="muted">Unavailable</span>'}</td>
+        <td class="head">"${esc(r.headline)}"
+          ${r.excerpt && r.excerpt_attribution === "specific" ? `<span class="ex">Excerpt (search-index paraphrase): ${esc(r.excerpt)}</span>` : ""}
+          <span class="ex"><i>Basis: ${r.text_basis}.</i> ${esc(r.rationale)}</span>
+          ${r.note ? `<span class="nt">${esc(r.note)}</span>` : ""}</td>
+        <td class="r num">${r.platform_rating != null ? r.platform_rating + "★" : '<span class="muted small">Unavailable</span>'}</td>
+        <td><span class="pill ${CLS[r.classification]}">${r.classification}</span></td>
+        <td class="r num">${r.score == null ? "—" : (r.score > 0 ? "+" : "") + r.score.toFixed(2)}</td>
+        <td><div class="themes-cell">${r.pos_themes.map(t => `<span class="th-p">+ ${t}</span>`).join("")}${r.neg_themes.map(t => `<span class="th-n">− ${t}</span>`).join("")}</div></td>
+        <td class="r num small">${r.contentment_contribution == null ? "Excluded" : `${r.contentment_points} pts<br><span class="muted">+${r.contentment_contribution.toFixed(2)}</span>`}</td>
+      </tr>`).join("") + "</tbody>";
+  }
+  ["change", "input"].forEach(ev => [fs, $("#fClass"), $("#fText")].forEach(n => n.addEventListener(ev, render)));
+  render();
+})();
+</script>
