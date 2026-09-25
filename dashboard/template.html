@@ -115,6 +115,7 @@ svg.chart .hit:hover + .mark, svg.chart g.row:hover .mark{opacity:.85}
 .filters input{min-width:0;flex:1 1 220px}
 .reviews td.head{min-width:260px;max-width:440px}
 .reviews td.head .ex{display:block;color:var(--muted);font-size:13px;margin-top:4px}
+.reviews td.head .ex.verb{color:var(--ink-2);border-left:2px solid var(--line);padding-left:8px}
 .reviews td.head .nt{display:block;color:var(--warn-ink);font-size:12.5px;margin-top:4px}
 .themes-cell{display:flex;flex-wrap:wrap;gap:4px;min-width:160px}
 .th-p,.th-n{font-size:12px;padding:2px 6px;border-radius:4px}
@@ -250,7 +251,7 @@ footer{font-size:12.5px;color:var(--muted);text-align:left}
       <label class="small muted" for="fSource">Source</label>
       <select id="fSource"><option value="">All</option></select>
       <label class="small muted" for="fClass">Classification</label>
-      <select id="fClass"><option value="">All</option><option>Positive</option><option>Mixed/Neutral</option><option>Negative</option><option>Insufficient text</option></select>
+      <select id="fClass"><option value="">All</option><option>Positive</option><option>Mixed/Neutral</option><option>Negative</option><option>Insufficient text</option><option>Not yet classified</option></select>
       <input id="fText" type="search" placeholder="Search headline, excerpt, theme" aria-label="Search reviews">
       <span class="small muted num" id="fCount"></span>
     </div>
@@ -315,7 +316,7 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const pct = v => v == null ? "—" : `${Math.round(v)}%`;
 const yr = y => y == null ? "Year unavailable" : String(y);
-const CLS = {Positive:"pos","Mixed/Neutral":"mix",Negative:"neg","Insufficient text":"ex"};
+const CLS = {Positive:"pos","Mixed/Neutral":"mix",Negative:"neg","Insufficient text":"ex","Not yet classified":"ex"};
 const fmtDate = d => d ? new Date(d + "T00:00:00Z").toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric",timeZone:"UTC"}) : "Unavailable";
 
 function el(tag, attrs = {}, parent) {
@@ -369,7 +370,7 @@ const allN = DATA.scopes.all.metrics.overall.n;
 $("#coverage").innerHTML = (SCOPE === "contractor"
   ? `<b>Showing only reviewers whose job title contains ${M.role_keywords.map(k => `"${k}"`).join(", ")}: ${O.n} of ${allN} classified reviews.</b> Most Glassdoor reviews surfaced without a job title, so this filter keeps only reviews where the title was visible and matched. With n=${O.n}, every figure below is anecdotal. Switch to "All reviewers" for the full sample.<br>`
   : "") +
-  `<b>${O.n} reviews classified from ${avail.length} of ${SOURCES.length} target sources</b> (${avail.join(", ")}). ` +
+  `${R.filter(r => r.excerpt_attribution === "verbatim").length ? `<b>${R.filter(r => r.excerpt_attribution === "verbatim" && r.included).length} reviews use full verbatim text from saved Glassdoor pages.</b> ` : ""}<b>${O.n} reviews classified from ${avail.length} of ${SOURCES.length} target sources</b> (${avail.join(", ")}). ` +
   `Reddit and Comparably are <b>unavailable</b> (blocked or no Mercor profile), and Trustpilot shows only an aggregate rating. ` +
   `Records come from search-index results, not a random sample. Glassdoor's own aggregate (4.1–4.2★) suggests its full review population is more positive than this sample. ` +
   `Only ${O.n - (M.by_year.find(y => y.year == null)?.n ?? 0)} classified reviews have a verified date. <a href="#method">Methodology</a>`;
@@ -650,6 +651,7 @@ $("#aggTable").innerHTML = `<thead><tr><th>Source</th><th>Metric</th><th>Value</
         <td class="small">${r.reviewer_type ? esc(r.reviewer_type) : '<span class="muted">Unavailable</span>'}</td>
         <td class="head">"${esc(r.headline)}"
           ${r.excerpt && r.excerpt_attribution === "specific" ? `<span class="ex">Excerpt (search-index paraphrase): ${esc(r.excerpt)}</span>` : ""}
+          ${r.excerpt && r.excerpt_attribution === "verbatim" ? `<span class="ex verb">${esc(r.excerpt).replace(/\n/g, "<br>")}</span>` : ""}
           <span class="ex"><i>Basis: ${r.text_basis}.</i> ${esc(r.rationale)}</span>
           ${r.note ? `<span class="nt">${esc(r.note)}</span>` : ""}</td>
         <td class="r num">${r.platform_rating != null ? r.platform_rating + "★" : '<span class="muted small">Unavailable</span>'}</td>

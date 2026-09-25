@@ -89,7 +89,8 @@ REVIEWS = [
        "Headline is plainly positive. Two searches returned conflicting body summaries for this review "
        "(one strongly positive with a 5-star rating, one 'above average' citing poor communication and "
        "disorganization), so neither body nor rating is used.",
-       reviewer="Finance Expert", attribution="conflicting",
+       reviewer="Finance expert (current employee, less than 1 year)", attribution="conflicting",
+       date="2025-02-24", date_basis="Glassdoor saved page",
        note="Conflicting body summaries across searches; classified from headline only, rating left blank."),
     gd(95878450, "Nice Work Environment", 0.6, ["Culture"], [], "Positive about environment."),
     gd(95912929, "Scam", -0.9, [], ["Trust & legitimacy"],
@@ -222,7 +223,7 @@ REVIEWS = [
 # shown in the search index, and different snapshots disagree, so ranges are kept.
 AGGREGATES = [
     dict(source="Glassdoor", metric="Overall rating", value="4.1–4.2 / 5",
-         detail="4.2 from 188 reviews in one indexed snapshot; 4.1 from 722–734 reviews in a later one",
+         detail="4.2 from 190 reviews on the Glassdoor page saved 2026-09-25 (verified). Search snapshots showed 4.2/188 and 4.1/722–734",
          url="https://www.glassdoor.com/Reviews/Mercor-Reviews-E9031572.htm", rating_mid=4.15),
     dict(source="Glassdoor", metric="Recommend to a friend", value="78–90%",
          detail="Varies across indexed snapshots", url="https://www.glassdoor.com/Reviews/Mercor-Reviews-E9031572.htm"),

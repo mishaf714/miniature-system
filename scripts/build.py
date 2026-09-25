@@ -14,6 +14,29 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "data"))
 from reviews_raw import REVIEWS, AGGREGATES  # noqa: E402
+from classifications import CLASSIFICATIONS  # noqa: E402
+
+IMPORTED = ROOT / "data" / "glassdoor_imported.json"
+
+
+def imported_reviews():
+    """Reviews extracted from saved Glassdoor pages (full verbatim text)."""
+    if not IMPORTED.exists():
+        return []
+    out = []
+    for g in json.loads(IMPORTED.read_text()):
+        c = CLASSIFICATIONS.get(g["rvw"])
+        body = "\n".join(f"{k}: {g[k.lower()]}" for k in ("Pros", "Cons", "Advice") if g.get(k.lower()))
+        who = ", ".join(x for x in (g["job_title"], g["employment"], g["location"]) if x)
+        out.append(dict(
+            id=f"GD-{g['rvw']}", source="Glassdoor", data_type="Individual review", url=g["url"],
+            seq=g["rvw"], headline=g["title"], excerpt=body, excerpt_attribution="verbatim",
+            date=g["date"], date_basis="Glassdoor saved page", reviewer_type=who or None,
+            platform_rating=g["rating"], score=c[0] if c else None,
+            pos_themes=c[1] if c else [], neg_themes=c[2] if c else [],
+            rationale=c[3] if c else "Imported; not yet classified.", pending=c is None,
+            note="Text shown truncated on the saved page (\"Show more\")." if g["truncated"] else None))
+    return out
 
 COLLECTED_ON = "2026-09-24"
 POS_T, NEG_T = 0.35, -0.35            # sentiment-score thresholds
@@ -29,7 +52,9 @@ SCOPES = {
 }
 
 
-def classify(score):
+def classify(score, pending=False):
+    if pending:
+        return "Not yet classified"
     if score is None:
         return "Insufficient text"
     if score >= POS_T:
@@ -61,13 +86,15 @@ def summarize(rows):
 
 def prepare():
     rows = []
-    for r in REVIEWS:
+    imported = imported_reviews()
+    have = {r["id"] for r in imported}
+    for r in [r for r in REVIEWS if r["id"] not in have] + imported:
         r = dict(r)
-        r["classification"] = classify(r["score"])
+        r["classification"] = classify(r["score"], r.get("pending", False))
         r["year"] = int(r["date"][:4]) if r.get("date") else None
         r["included"] = r["score"] is not None
-        r["text_basis"] = ("Headline + search excerpt" if r["excerpt_attribution"] == "specific"
-                           else "Headline only")
+        r["text_basis"] = {"verbatim": "Full review text (Glassdoor page)",
+                           "specific": "Headline + search excerpt"}.get(r["excerpt_attribution"], "Headline only")
         r["collected_on"] = COLLECTED_ON
         r["role_match"] = SCOPES["contractor"]["test"](r)
         rows.append(r)

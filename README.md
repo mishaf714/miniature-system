@@ -26,6 +26,23 @@ switches to all reviewers. Only reviews with a visible, matching job title are k
 most Glassdoor reviews surfaced without one, so this scope is currently very small.
 `data/reviews.csv` has a `role_match` column; `data/metrics.json` holds both scopes.
 
+## Adding Glassdoor reviews from saved pages
+
+Search results only expose headlines, so full reviews come from pages you save yourself:
+
+1. Log in to Glassdoor and open a Mercor reviews page, for example a job-title page such as
+   `https://www.glassdoor.com/Reviews/Mercor-Generalist-Reviews-EI_IE9031572.0,6_KO7,17.htm`
+   or the main list (`.../Mercor-Reviews-E9031572_P2.htm` for page 2, and so on).
+2. Save it (Ctrl/Cmd+S) into `data/glassdoor_html/`. This folder is git-ignored because
+   saved pages contain your account details.
+3. Run `python3 scripts/import_glassdoor.py`. Title, job title, date, rating, pros, cons
+   and advice are extracted verbatim into `data/glassdoor_imported.json`.
+4. Add a classification per review to `data/classifications.py` (Claude does this by
+   reading the text), then run `python3 scripts/build.py`.
+
+Imported reviews replace any search-derived record for the same review ID. Unclassified
+imports are listed as "Not yet classified" and excluded from metrics.
+
 ## Methodology
 
 - **Sentiment score** from −1 to +1, assigned per review from its verified written text.

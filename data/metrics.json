@@ -10,37 +10,37 @@
     "Negative": 0
   },
   "overall": {
-    "n": 49,
-    "positive": 28,
+    "n": 54,
+    "positive": 31,
     "negative": 17,
-    "mixed": 4,
-    "pos_pct": 57.1,
-    "neg_pct": 34.7,
-    "mixed_pct": 8.2,
-    "contentment": 61.2,
+    "mixed": 6,
+    "pos_pct": 57.4,
+    "neg_pct": 31.5,
+    "mixed_pct": 11.1,
+    "contentment": 63.0,
     "ci": [
-      48,
-      74
+      51,
+      75
     ],
-    "mean_sentiment": 0.11
+    "mean_sentiment": 0.13
   },
-  "records_total": 56,
+  "records_total": 61,
   "records_excluded": 7,
   "by_source": {
     "Glassdoor": {
-      "n": 41,
-      "positive": 23,
+      "n": 46,
+      "positive": 26,
       "negative": 15,
-      "mixed": 3,
-      "pos_pct": 56.1,
-      "neg_pct": 36.6,
-      "mixed_pct": 7.3,
-      "contentment": 59.8,
+      "mixed": 5,
+      "pos_pct": 56.5,
+      "neg_pct": 32.6,
+      "mixed_pct": 10.9,
+      "contentment": 62.0,
       "ci": [
-        45,
-        74
+        49,
+        75
       ],
-      "mean_sentiment": 0.1
+      "mean_sentiment": 0.13
     },
     "Indeed": {
       "n": 6,
@@ -125,35 +125,51 @@
     },
     {
       "year": 2025,
-      "n": 3,
-      "positive": 2,
+      "n": 4,
+      "positive": 3,
       "negative": 1,
       "mixed": 0,
-      "pos_pct": 66.7,
-      "neg_pct": 33.3,
+      "pos_pct": 75.0,
+      "neg_pct": 25.0,
       "mixed_pct": 0.0,
-      "contentment": 66.7,
+      "contentment": 75.0,
       "ci": [
-        1,
+        26,
         100
       ],
-      "mean_sentiment": 0.15
+      "mean_sentiment": 0.34
+    },
+    {
+      "year": 2026,
+      "n": 5,
+      "positive": 3,
+      "negative": 0,
+      "mixed": 2,
+      "pos_pct": 60.0,
+      "neg_pct": 0.0,
+      "mixed_pct": 40.0,
+      "contentment": 80.0,
+      "ci": [
+        56,
+        100
+      ],
+      "mean_sentiment": 0.38
     },
     {
       "year": null,
-      "n": 45,
-      "positive": 26,
+      "n": 44,
+      "positive": 25,
       "negative": 15,
       "mixed": 4,
-      "pos_pct": 57.8,
-      "neg_pct": 33.3,
-      "mixed_pct": 8.9,
-      "contentment": 62.2,
+      "pos_pct": 56.8,
+      "neg_pct": 34.1,
+      "mixed_pct": 9.1,
+      "contentment": 61.4,
       "ci": [
-        49,
-        76
+        48,
+        75
       ],
-      "mean_sentiment": 0.13
+      "mean_sentiment": 0.11
     }
   ],
   "by_source_year": [
@@ -174,33 +190,53 @@
     {
       "source": "Glassdoor",
       "year": 2025,
-      "n": 1,
-      "positive": 0,
+      "n": 2,
+      "positive": 1,
       "negative": 1,
       "mixed": 0,
-      "pos_pct": 0.0,
-      "neg_pct": 100.0,
+      "pos_pct": 50.0,
+      "neg_pct": 50.0,
       "mixed_pct": 0.0,
-      "contentment": 0.0,
-      "ci": null,
-      "mean_sentiment": -0.95
+      "contentment": 50.0,
+      "ci": [
+        0,
+        100
+      ],
+      "mean_sentiment": -0.02
+    },
+    {
+      "source": "Glassdoor",
+      "year": 2026,
+      "n": 5,
+      "positive": 3,
+      "negative": 0,
+      "mixed": 2,
+      "pos_pct": 60.0,
+      "neg_pct": 0.0,
+      "mixed_pct": 40.0,
+      "contentment": 80.0,
+      "ci": [
+        56,
+        100
+      ],
+      "mean_sentiment": 0.38
     },
     {
       "source": "Glassdoor",
       "year": null,
-      "n": 39,
-      "positive": 23,
+      "n": 38,
+      "positive": 22,
       "negative": 13,
       "mixed": 3,
-      "pos_pct": 59.0,
-      "neg_pct": 33.3,
-      "mixed_pct": 7.7,
-      "contentment": 62.8,
+      "pos_pct": 57.9,
+      "neg_pct": 34.2,
+      "mixed_pct": 7.9,
+      "contentment": 61.8,
       "ci": [
-        48,
-        78
+        47,
+        77
       ],
-      "mean_sentiment": 0.16
+      "mean_sentiment": 0.14
     },
     {
       "source": "Indeed",
@@ -262,17 +298,17 @@
     },
     {
       "year": 2025,
-      "included": 3,
+      "included": 4,
       "excluded": 0
     },
     {
       "year": 2026,
-      "included": 0,
+      "included": 5,
       "excluded": 1
     },
     {
       "year": null,
-      "included": 45,
+      "included": 44,
       "excluded": 6
     }
   ],
@@ -380,7 +416,7 @@
         "classification": "Positive",
         "score": 0.9,
         "headline": "Great company",
-        "date": null
+        "date": "2025-02-24"
       },
       {
         "id": "GD-95878450",
@@ -605,45 +641,85 @@
         "score": 0.7,
         "headline": "Great",
         "date": null
+      },
+      {
+        "id": "GD-105621060",
+        "seq": 105621060,
+        "classification": "Positive",
+        "score": 0.6,
+        "headline": "Interesting projects with competitive pay",
+        "date": "2026-09-17"
+      },
+      {
+        "id": "GD-105636131",
+        "seq": 105636131,
+        "classification": "Mixed/Neutral",
+        "score": -0.05,
+        "headline": "Nice work-life balance but stressful environment",
+        "date": "2026-09-17"
+      },
+      {
+        "id": "GD-105637613",
+        "seq": 105637613,
+        "classification": "Mixed/Neutral",
+        "score": 0.0,
+        "headline": "Good hourly wages, but job security and feedback is lacking",
+        "date": "2026-09-18"
+      },
+      {
+        "id": "GD-105693470",
+        "seq": 105693470,
+        "classification": "Positive",
+        "score": 0.45,
+        "headline": "Flexible remote work with training and community support",
+        "date": "2026-09-22"
+      },
+      {
+        "id": "GD-105713599",
+        "seq": 105713599,
+        "classification": "Positive",
+        "score": 0.9,
+        "headline": "Highest quality AI company: Meaningful projects; high-caliber clients; adequate compensation & growth opportunity",
+        "date": "2026-09-23"
       }
     ],
     "earlier": {
       "range": [
         79167149,
-        97365185
+        98048107
       ],
-      "n": 20,
-      "positive": 15,
-      "negative": 5,
-      "mixed": 0,
-      "pos_pct": 75.0,
-      "neg_pct": 25.0,
-      "mixed_pct": 0.0,
-      "contentment": 75.0,
+      "n": 23,
+      "positive": 16,
+      "negative": 6,
+      "mixed": 1,
+      "pos_pct": 69.6,
+      "neg_pct": 26.1,
+      "mixed_pct": 4.3,
+      "contentment": 71.7,
       "ci": [
-        56,
-        94
+        53,
+        90
       ],
-      "mean_sentiment": 0.32
+      "mean_sentiment": 0.28
     },
     "later": {
       "range": [
-        97627391,
-        103274438
+        98945044,
+        105713599
       ],
-      "n": 21,
-      "positive": 8,
-      "negative": 10,
-      "mixed": 3,
-      "pos_pct": 38.1,
-      "neg_pct": 47.6,
-      "mixed_pct": 14.3,
-      "contentment": 45.2,
+      "n": 23,
+      "positive": 10,
+      "negative": 9,
+      "mixed": 4,
+      "pos_pct": 43.5,
+      "neg_pct": 39.1,
+      "mixed_pct": 17.4,
+      "contentment": 52.2,
       "ci": [
-        25,
-        65
+        33,
+        71
       ],
-      "mean_sentiment": -0.11
+      "mean_sentiment": -0.02
     },
     "anchors": [
       {
@@ -651,49 +727,78 @@
         "date": "2024-08-01"
       },
       {
+        "seq": 95294235,
+        "date": "2025-02-24"
+      },
+      {
         "seq": 100795889,
         "date": "2025-11-13"
+      },
+      {
+        "seq": 105621060,
+        "date": "2026-09-17"
+      },
+      {
+        "seq": 105636131,
+        "date": "2026-09-17"
+      },
+      {
+        "seq": 105637613,
+        "date": "2026-09-18"
+      },
+      {
+        "seq": 105693470,
+        "date": "2026-09-22"
+      },
+      {
+        "seq": 105713599,
+        "date": "2026-09-23"
       }
     ]
   },
   "themes": [
     {
       "theme": "Overall satisfaction",
-      "positive": 19,
+      "positive": 21,
       "negative": 1
     },
     {
       "theme": "Compensation",
-      "positive": 6,
+      "positive": 10,
       "negative": 5
+    },
+    {
+      "theme": "Work-life balance",
+      "positive": 9,
+      "negative": 2
     },
     {
       "theme": "Communication",
       "positive": 0,
-      "negative": 8
-    },
-    {
-      "theme": "Work-life balance",
-      "positive": 5,
-      "negative": 2
-    },
-    {
-      "theme": "Culture",
-      "positive": 4,
-      "negative": 2
-    },
-    {
-      "theme": "Organization & process",
-      "positive": 0,
-      "negative": 5
+      "negative": 9
     },
     {
       "theme": "Job security",
       "positive": 0,
-      "negative": 5
+      "negative": 8
+    },
+    {
+      "theme": "Culture",
+      "positive": 4,
+      "negative": 3
+    },
+    {
+      "theme": "Organization & process",
+      "positive": 0,
+      "negative": 6
     },
     {
       "theme": "Learning opportunities",
+      "positive": 5,
+      "negative": 0
+    },
+    {
+      "theme": "Remote work",
       "positive": 4,
       "negative": 0
     },
@@ -708,7 +813,7 @@
       "negative": 1
     },
     {
-      "theme": "Remote work",
+      "theme": "Coworker relationships",
       "positive": 3,
       "negative": 0
     },
@@ -716,11 +821,6 @@
       "theme": "Workload",
       "positive": 0,
       "negative": 3
-    },
-    {
-      "theme": "Coworker relationships",
-      "positive": 2,
-      "negative": 0
     },
     {
       "theme": "Tools & platform",
@@ -731,11 +831,16 @@
       "theme": "Leadership",
       "positive": 0,
       "negative": 2
+    },
+    {
+      "theme": "Career growth",
+      "positive": 1,
+      "negative": 1
     }
   ],
   "individual_ratings": {
-    "n": 1,
-    "mean": 4.0
+    "n": 6,
+    "mean": 4.17
   },
   "aggregates": [
     {
